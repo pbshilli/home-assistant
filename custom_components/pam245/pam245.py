@@ -21,7 +21,7 @@ class PAM245Api:
         if 0 <= volume <= 79:
             self.volume = volume
             _LOGGER.info(f"Set volume to {volume}")
-            self._send_command(f"Volume {volume}")
+            self._send_command(f"Volume {volume:02}")
         else:
             _LOGGER.warning(f"Commanded volume out of range ({volume})")
 
