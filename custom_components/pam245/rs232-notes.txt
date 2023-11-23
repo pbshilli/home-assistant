@@ -1,0 +1,38 @@
+$ minicom -b 9600 -D /dev/ttyUSB0
+## Disable hardware flow control ##
+
+https://www.osdaudio.com/mm5/graphics/pdfs/PAM245-manual-rev5-819.pdf
+https://www.osdaudio.com/mm5/graphics/pdfs/RS232-Interface-for-PAM245.pdf
+
+Host respond prompt:
+PA>
+
+Commands:
+Help        Help function
+?           Help function
+
+Now         Show all PA status
+
+Power 1     Power on
+Power 0     Power off
+Power t     Power toggle
+
+Mute 1      Mute on
+Mute 0      Mute off
+Mute t      Mute toggle
+
+Volume 00   Volume 0 (min)
+Volume 79   Volume 79 (max)
+
+Zone 1 1    Zone 1 on
+Zone 8 0    Zone 8 off
+Zone 0 1    Zone all on
+Zone 0 0    Zone all off
+
+Save        Save to memory
+
+Lock 0      System lock off
+Lock 1      System lock on
+Lock t      System lock toggle
+
+Version     Version number
