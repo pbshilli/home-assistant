@@ -1,4 +1,4 @@
-"""Config flow for Hello, state! integration."""
+"""Config flow for PAM245 integration."""
 import logging
 from typing import Any
 
@@ -66,7 +66,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for Hello, state!."""
+    """Handle a config flow for PAM245"""
 
     VERSION = 1
 

@@ -1,4 +1,4 @@
-"""The Hello, state! integration."""
+"""The PAM245 integration."""
 from asyncio import Event
 import logging
 
@@ -21,7 +21,7 @@ PLATFORMS: list[Platform] = [Platform.NUMBER]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Hello, state! from a config entry."""
+    """Set up PAM245 from a config entry."""
 
     api = PAM245Api('/dev/ttyS0')
     conn = await start_datagram_connection(hass.loop, api)

@@ -1,4 +1,4 @@
-"""The Hello, state! integration."""
+"""The PAM245 integration."""
 import asyncio
 import logging
 

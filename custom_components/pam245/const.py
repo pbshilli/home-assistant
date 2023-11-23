@@ -1,3 +1,3 @@
-"""Constants for the Hello, state! integration."""
+"""Constants for the PAM245 integration."""
 
-DOMAIN = "hello_state"
+DOMAIN = "pam245"
