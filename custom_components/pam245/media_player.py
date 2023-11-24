@@ -11,9 +11,9 @@ from homeassistant.components.media_player import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import DOMAIN, PAM245Data
+from . import DOMAIN
 from .entity import PAM245Entity
-from .pam245 import PAM245Api
+from .pam245 import PAM245Api, PAM245AsyncConnection
 
 
 async def async_setup_entry(
@@ -22,8 +22,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up PAM245 media player entity."""
-    data: PAM245Data = hass.data[DOMAIN][entry.entry_id]
-    device = data.device
+    data: PAM245AsyncConnection = hass.data[DOMAIN][entry.entry_id]
+    device = data
     description = MediaPlayerEntityDescription(
         key="amplifier",
         name="Amplifier",
@@ -48,7 +48,7 @@ class PAM245MediaPlayer(PAM245Entity, MediaPlayerEntity):
 
     def __init__(self,
                  unique_id: str,
-                 device: PAM245Api,
+                 device: PAM245AsyncConnection,
                  description: MediaPlayerEntityDescription) -> None:
         """Initialize the entity."""
         self._attr_unique_id = f"{unique_id}_amplifier"
@@ -58,48 +58,48 @@ class PAM245MediaPlayer(PAM245Entity, MediaPlayerEntity):
     @callback
     def _async_update_attrs(self) -> None:
         """Update attrs from device."""
-        self._attr_volume_level = self._device.volume / PAM245Api.VOLUME_MAX
-        self._attr_is_volume_muted = self._device.mute
+        self._attr_volume_level = self._api.volume / PAM245Api.VOLUME_MAX
+        self._attr_is_volume_muted = self._api.mute
         self._attr_state = (MediaPlayerState.ON
-            if self._device.power else MediaPlayerState.STANDBY)
+            if self._api.power else MediaPlayerState.STANDBY)
         super()._async_update_attrs()
 
     def turn_on(self) -> None:
         """Turn the media player on."""
-        self._device.set_switch('power', True)
+        self._api.set_switch('power', True)
         self._attr_state = MediaPlayerState.ON
         self.async_write_ha_state()
 
     def turn_off(self) -> None:
         """Turn the media player off."""
-        self._device.set_switch('power', False)
+        self._api.set_switch('power', False)
         self._attr_state = MediaPlayerState.STANDBY
         self.async_write_ha_state()
 
     def mute_volume(self, mute: bool) -> None:
         """Mute the volume."""
-        self._device.set_switch('mute', mute)
+        self._api.set_switch('mute', mute)
         self._attr_is_volume_muted = mute
         self.async_write_ha_state()
 
     def set_volume_level(self, volume: float) -> None:
         """Set volume level, range 0..1."""
-        self._device.set_volume(round(volume*PAM245Api.VOLUME_MAX))
+        self._api.set_volume(round(volume*PAM245Api.VOLUME_MAX))
         self._attr_volume_level = volume
         self.async_write_ha_state()
 
     def volume_up(self) -> None:
         """Volume up the media player."""
-        if (volume := self._device.volume) < PAM245Api.VOLUME_MAX:
+        if (volume := self._api.volume) < PAM245Api.VOLUME_MAX:
             new_device_volume = volume + 1
-            self._device.set_volume(new_device_volume)
+            self._api.set_volume(new_device_volume)
             self._attr_volume_level = new_device_volume / PAM245Api.VOLUME_MAX
             self.async_write_ha_state()
 
     def volume_down(self) -> None:
         """Volume down media player."""
-        if (volume := self._device.volume) > PAM245Api.VOLUME_MIN:
+        if (volume := self._api.volume) > PAM245Api.VOLUME_MIN:
             new_device_volume = volume - 1
-            self._device.set_volume(new_device_volume)
+            self._api.set_volume(new_device_volume)
             self._attr_volume_level = new_device_volume / PAM245Api.VOLUME_MAX
             self.async_write_ha_state()

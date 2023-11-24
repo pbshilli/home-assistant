@@ -9,9 +9,9 @@ from homeassistant.components.switch import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import DOMAIN, PAM245Data
+from . import DOMAIN
 from .entity import PAM245Entity
-from .pam245 import PAM245Api
+from .pam245 import PAM245Api, PAM245AsyncConnection
 
 PAM245_SWITCH_DESCRIPTIONS = [
     SwitchEntityDescription(
@@ -61,8 +61,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up PAM245 numbers."""
-    data: PAM245Data = hass.data[DOMAIN][entry.entry_id]
-    device = data.device
+    data: PAM245AsyncConnection = hass.data[DOMAIN][entry.entry_id]
+    device = data
     descriptions: list[SwitchEntityDescription] = []
     descriptions.extend(PAM245_SWITCH_DESCRIPTIONS)
     unique_id = entry.unique_id
@@ -76,7 +76,7 @@ class PAM245Switch(PAM245Entity, SwitchEntity):
 
     def __init__(self,
                  unique_id: str,
-                 device: PAM245Api,
+                 device: PAM245AsyncConnection,
                  description: SwitchEntityDescription) -> None:
         """Initialize the entity."""
         self._attr_unique_id = f"{unique_id}_{description.key}"
@@ -86,18 +86,18 @@ class PAM245Switch(PAM245Entity, SwitchEntity):
     @callback
     def _async_update_attrs(self) -> None:
         """Update attrs from device."""
-        self._attr_is_on = getattr(self._device,
+        self._attr_is_on = getattr(self._api,
                                    self.entity_description.key)
         super()._async_update_attrs()
 
     def turn_on(self, **kwargs) -> None:
         """Turn the entity on."""
-        self._device.set_switch(self.entity_description.key, True)
+        self._api.set_switch(self.entity_description.key, True)
         self._attr_is_on = True
         self.async_write_ha_state()
 
     def turn_off(self, **kwargs) -> None:
         """Turn the entity on."""
-        self._device.set_switch(self.entity_description.key, False)
+        self._api.set_switch(self.entity_description.key, False)
         self._attr_is_on = False
         self.async_write_ha_state()

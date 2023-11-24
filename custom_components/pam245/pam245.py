@@ -2,6 +2,8 @@
 import asyncio
 import logging
 
+import serial_asyncio
+
 _LOGGER = logging.getLogger(__name__)
 
 SWITCH_COMMANDS = {
@@ -40,9 +42,27 @@ class PAM245Api:
         self.serial = "TODOserialnumber"
 
         # Other
-        self.available = True
+        self.available = False
         self._callbacks = set()
         self._unparsed = ''
+
+    def event_connection_made(self, send_data_fn):
+        self._send_data_to_device = send_data_fn
+        self.available = True
+        self._call_callbacks() # Advertise availability
+
+        # Make sure no half-typed commands from previous sessions
+        # interfere with the next commands
+        self._send_command('')
+
+        # Reset device state
+        self._send_command('Version') # Get firmware version
+        self._send_command('Now') # Get current state
+
+    def event_connection_lost(self, send_data_fn):
+        self._send_data_to_device = None
+        self.available = False
+        self._call_callbacks() # Advertise unavailability
 
     def set_volume(self, volume: int) -> None:
         if self.VOLUME_MIN <= volume <= self.VOLUME_MAX:
@@ -98,8 +118,11 @@ class PAM245Api:
             callback()
 
     def _send_command(self, command):
-        data = (command+'\n').encode()
-        self.send_data_to_device(data)
+        if self._send_data_to_device:
+            data = (command+'\n').encode()
+            self._send_data_to_device(data)
+        else:
+            _LOGGER.error(f'Command dropped (no connection): "{command}"')
 
     def parse_data_from_device(self, data):
         unparsed = self._unparsed + data.decode()
@@ -122,15 +145,18 @@ class PAM245Api:
 
 class PAM245Protocol(asyncio.BaseProtocol):
     def __init__(self, api: PAM245Api):
+        self._transport = None
         self.api = api
         super().__init__()
 
     def connection_made(self, transport):
-        self.api.available = True
+        self._transport = transport
+        self.api.event_connection_made(self.send_data)
         super().connection_made(transport)
 
     def connection_lost(self, exc):
-        self.api.available = False
+        self._transport = None
+        self.api.event_connection_lost()
         super().connection_lost(exc)
 
     def send_data(self, data):
@@ -141,61 +167,58 @@ class PAM245Protocol(asyncio.BaseProtocol):
         self.api.parse_data_from_device(data)
 
 
+class PAM245AsyncConnection:
+    def __init__(self):
+        self.api = PAM245Api()
+        self._transport = None
+
+    def _start(self, transport):
+        assert transport is not None
+        assert self._transport is None
+        self._transport = transport
+
+    def stop(self):
+        self._transport.close()
+        self._transport = None
+
+
 class PAM245SerialProtocol(PAM245Protocol, asyncio.Protocol):
     def __init__(self, api: PAM245Api):
         super().__init__(api)
-
-    def connection_made(self, transport):
-        self.transport = transport
-
-        # TODO make sure hardware flow control doesn't interfere
-        ser = self.transport.serial
-        _LOGGER.warning(f"{ser.rtscts=} {ser.dsrdtr=}")
-
-        super().connection_made(transport)
 
     def data_received(self, data):
         _LOGGER.debug(f"Received serial data {data!r}")
         super().pam245_data_received(data)
 
-                    
-class PAM245DatagramProtocol(PAM245Protocol, asyncio.DatagramProtocol):
-    def __init__(self, api: PAM245Api):
-        super().__init__(api)
+    def send_data(self, data):
+        self._transport.write(data)
 
-    def connection_made(self, transport):
-        self.transport = transport
+
+class PAM245AsyncSerialConnection(PAM245AsyncConnection):
+    async def start(self, loop, serial_port: str):
+        transport, protocol = await serial_asyncio.create_serial_connection(
+                loop,
+                lambda: PAM245SerialProtocol(self.api),
+                serial_port)
+        self._start(transport)
+
+
+class PAM245DatagramProtocol(PAM245Protocol, asyncio.DatagramProtocol):
+    def __init__(self, tx_port: int, api: PAM245Api):
+        self._tx_port = tx_port
+        super().__init__(api)
 
     def datagram_received(self, data, addr):
         _LOGGER.debug(f"Received datagram {data!r} from {addr}")
         super().pam245_data_received(data)
 
-
-async def start_serial_connection(loop, api, serial_port):
-    transport, protocol = await pyserial_asyncio.create_serial_connection(
-            loop,
-            lambda: PAM245SerialProtocol(api),
-            serial_port)
-
-    def send_data(data):
-        transport.write(data)
-
-    api.send_data_to_device = send_data
-
-    return transport
+    def send_data(self, data):
+        self._transport.sendto(data, ('localhost', self._tx_port))
 
 
-async def start_datagram_connection(loop, api, rx_port, tx_port):
-    transport, protocol = await loop.create_datagram_endpoint(
-            lambda: PAM245DatagramProtocol(api),
-            ('localhost', rx_port))
-
-    def send_data(data):
-        transport.sendto(data, ('localhost', tx_port))
-
-    api.send_data_to_device = send_data
-
-    return transport
-
-
-
+class PAM245AsyncUdpConnection(PAM245AsyncConnection):
+    async def start(self, loop, rx_port: int, tx_port: int):
+        transport, protocol = await loop.create_datagram_endpoint(
+                lambda: PAM245DatagramProtocol(tx_port, self.api),
+                ('localhost', rx_port))
+        self._start(transport)

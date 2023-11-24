@@ -9,9 +9,9 @@ from homeassistant.components.number import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import DOMAIN, PAM245Data
+from . import DOMAIN
 from .entity import PAM245Entity
-from .pam245 import PAM245Api
+from .pam245 import PAM245Api, PAM245AsyncConnection
 
 
 async def async_setup_entry(
@@ -20,8 +20,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up PAM245 numbers."""
-    data: PAM245Data = hass.data[DOMAIN][entry.entry_id]
-    device = data.device
+    data: PAM245AsyncConnection = hass.data[DOMAIN][entry.entry_id]
+    device = data
     description = NumberEntityDescription(
         key="volume",
         name="Volume",
@@ -43,7 +43,7 @@ class PAM245VolumeNumber(PAM245Entity, NumberEntity):
 
     def __init__(self,
                  unique_id: str,
-                 device: PAM245Api,
+                 device: PAM245AsyncConnection,
                  description: NumberEntityDescription) -> None:
         """Initialize the entity."""
         self._attr_unique_id = f"{unique_id}_volume"
@@ -53,10 +53,10 @@ class PAM245VolumeNumber(PAM245Entity, NumberEntity):
     @callback
     def _async_update_attrs(self) -> None:
         """Update attrs from device."""
-        self._attr_native_value = self._device.volume
+        self._attr_native_value = self._api.volume
         super()._async_update_attrs()
 
     def set_native_value(self, value: float) -> None:
         """Set the value."""
-        self._device.set_volume(int(value))
+        self._api.set_volume(int(value))
         self.async_write_ha_state()
