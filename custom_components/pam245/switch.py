@@ -9,7 +9,7 @@ from homeassistant.components.switch import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import DOMAIN
+from . import DOMAIN, PAM245Data
 from .entity import PAM245Entity
 from .pam245 import PAM245Api
 
@@ -61,8 +61,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up PAM245 numbers."""
-    data: PAM245Api = hass.data[DOMAIN][entry.entry_id]
-    device = data
+    data: PAM245Data = hass.data[DOMAIN][entry.entry_id]
+    device = data.device
     descriptions: list[SwitchEntityDescription] = []
     descriptions.extend(PAM245_SWITCH_DESCRIPTIONS)
     unique_id = entry.unique_id

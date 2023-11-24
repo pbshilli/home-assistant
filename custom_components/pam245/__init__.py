@@ -1,12 +1,13 @@
 """The PAM245 integration."""
-from asyncio import Event
+import asyncio
+from dataclasses import dataclass
 import logging
 
 _LOGGER = logging.getLogger(__name__)
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform, EVENT_HOMEASSISTANT_STOP, CONF_PORT
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.const import Platform, CONF_PORT
+from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 
@@ -18,6 +19,11 @@ from .pam245 import (PAM245Api,
 PLATFORMS: list[Platform] = [Platform.NUMBER,
                              Platform.MEDIA_PLAYER,
                              Platform.SWITCH]
+
+@dataclass
+class PAM245Data:
+    device: PAM245Api
+    conn: asyncio.BaseTransport
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up PAM245 from a config entry."""
@@ -34,19 +40,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         conn = await start_serial_connection(hass.loop, api, serial_port)
 
     hass.data.setdefault(DOMAIN, {})
-    # TODO 1. Create API instance
-    # TODO 2. Validate the API connection (and authentication)
-    # TODO 3. Store an API object for your platforms to access
-    hass.data[DOMAIN][entry.entry_id] = api
+    data = PAM245Data(device=api, conn=conn)
+    hass.data[DOMAIN][entry.entry_id] = data
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
-    @callback
-    def handle_hass_stop(event: Event) -> None:
-        """Cancel this connection."""
-        conn.close()
-
-    hass.bus.async_listen(EVENT_HOMEASSISTANT_STOP, handle_hass_stop)
 
     return True
 
@@ -54,6 +51,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        hass.data[DOMAIN].pop(entry.entry_id)
+        data: PAM245Data = hass.data[DOMAIN].pop(entry.entry_id)
+        data.conn.close()
 
     return unload_ok
