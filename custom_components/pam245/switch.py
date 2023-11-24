@@ -65,7 +65,8 @@ async def async_setup_entry(
     device = data
     descriptions: list[SwitchEntityDescription] = []
     descriptions.extend(PAM245_SWITCH_DESCRIPTIONS)
-    async_add_entities(PAM245Switch(device, description) for description in descriptions)
+    unique_id = entry.unique_id
+    async_add_entities(PAM245Switch(unique_id, device, description) for description in descriptions)
 
 
 class PAM245Switch(PAM245Entity, SwitchEntity):
@@ -73,11 +74,14 @@ class PAM245Switch(PAM245Entity, SwitchEntity):
 
     entity_description: SwitchEntityDescription
 
-    def __init__(self, device: PAM245Api, description: SwitchEntityDescription) -> None:
+    def __init__(self,
+                 unique_id: str,
+                 device: PAM245Api,
+                 description: SwitchEntityDescription) -> None:
         """Initialize the entity."""
+        self._attr_unique_id = f"{unique_id}_{description.key}"
         self.entity_description = description
-        super().__init__(device)
-        self._attr_unique_id = f"{self._attr_unique_id}_{description.key}"
+        super().__init__(unique_id, device)
         
     @callback
     def _async_update_attrs(self) -> None:

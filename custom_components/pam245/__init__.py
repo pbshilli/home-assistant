@@ -5,7 +5,7 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform, EVENT_HOMEASSISTANT_STOP
+from homeassistant.const import Platform, EVENT_HOMEASSISTANT_STOP, CONF_PORT
 from homeassistant.core import HomeAssistant, callback
 
 from .const import DOMAIN
@@ -24,7 +24,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     api = PAM245Api()
 
-    config = "udp:22222:33333" # TODO pull from actual HA config
+    config = entry.data[CONF_PORT]
     if config.startswith('udp:'):
         _, rx_port, tx_port = config.split(':')
         conn = await start_datagram_connection(hass.loop, api,

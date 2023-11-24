@@ -14,13 +14,12 @@ class PAM245Entity(Entity):
     _attr_should_poll = False
     _attr_has_entity_name = True
 
-    def __init__(self, device: PAM245Api) -> None:
+    def __init__(self, unique_id: str, device: PAM245Api) -> None:
         """Initialize the entity."""
         self._device = device
-        self._attr_unique_id = f"{DOMAIN}_{self._device.serial}"
         self._attr_device_info = DeviceInfo(
             connections=set(),
-            identifiers={(DOMAIN, self._device.serial)},
+            identifiers={(DOMAIN, unique_id)},
             name="PAM245",
             manufacturer="OSD Audio",
             model="PAM245",

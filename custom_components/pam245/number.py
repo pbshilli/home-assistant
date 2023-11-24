@@ -13,19 +13,6 @@ from . import DOMAIN
 from .entity import PAM245Entity
 from .pam245 import PAM245Api
 
-PAM245_NUMBER_DESCRIPTIONS = (
-    NumberEntityDescription(
-        key="volume",
-        name="Volume",
-        translation_key="volume",
-        native_step=1,
-        native_min_value=PAM245Api.VOLUME_MIN,
-        native_max_value=PAM245Api.VOLUME_MAX,
-        icon="mdi:volume-high",
-        mode=NumberMode.SLIDER,
-    ),
-)
-
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -35,9 +22,18 @@ async def async_setup_entry(
     """Set up PAM245 numbers."""
     data: PAM245Api = hass.data[DOMAIN][entry.entry_id]
     device = data
-    descriptions: list[NumberEntityDescription] = []
-    descriptions.extend(PAM245_NUMBER_DESCRIPTIONS)
-    async_add_entities(PAM245VolumeNumber(device, description) for description in descriptions)
+    description = NumberEntityDescription(
+        key="volume",
+        name="Volume",
+        translation_key="volume",
+        native_step=1,
+        native_min_value=PAM245Api.VOLUME_MIN,
+        native_max_value=PAM245Api.VOLUME_MAX,
+        icon="mdi:volume-high",
+        mode=NumberMode.SLIDER,
+    )
+    unique_id = entry.unique_id
+    async_add_entities([PAM245VolumeNumber(unique_id, device, description)])
 
 
 class PAM245VolumeNumber(PAM245Entity, NumberEntity):
@@ -45,11 +41,14 @@ class PAM245VolumeNumber(PAM245Entity, NumberEntity):
 
     entity_description: NumberEntityDescription
 
-    def __init__(self, device: PAM245Api, description: NumberEntityDescription) -> None:
+    def __init__(self,
+                 unique_id: str,
+                 device: PAM245Api,
+                 description: NumberEntityDescription) -> None:
         """Initialize the entity."""
+        self._attr_unique_id = f"{unique_id}_volume"
         self.entity_description = description
-        super().__init__(device)
-        self._attr_unique_id = f"{self._attr_unique_id}_volume"
+        super().__init__(unique_id, device)
         
     @callback
     def _async_update_attrs(self) -> None:

@@ -30,7 +30,8 @@ async def async_setup_entry(
         translation_key="amplifier",
         device_class=MediaPlayerDeviceClass.RECEIVER,
         )
-    async_add_entities([PAM245MediaPlayer(device, description)])
+    unique_id = entry.unique_id
+    async_add_entities([PAM245MediaPlayer(unique_id, device, description)])
 
 
 class PAM245MediaPlayer(PAM245Entity, MediaPlayerEntity):
@@ -45,11 +46,14 @@ class PAM245MediaPlayer(PAM245Entity, MediaPlayerEntity):
         | MediaPlayerEntityFeature.TURN_OFF
     )
 
-    def __init__(self, device: PAM245Api, description: MediaPlayerEntityDescription) -> None:
+    def __init__(self,
+                 unique_id: str,
+                 device: PAM245Api,
+                 description: MediaPlayerEntityDescription) -> None:
         """Initialize the entity."""
+        self._attr_unique_id = f"{unique_id}_amplifier"
         self.entity_description = description
-        super().__init__(device)
-        self._attr_unique_id = f"{self._attr_unique_id}_amplifier"
+        super().__init__(unique_id, device)
         
     @callback
     def _async_update_attrs(self) -> None:
