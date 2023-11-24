@@ -15,7 +15,9 @@ from .pam245 import (PAM245Api,
                      start_serial_connection,
                      )
 
-PLATFORMS: list[Platform] = [Platform.NUMBER, Platform.SWITCH]
+PLATFORMS: list[Platform] = [Platform.NUMBER,
+                             Platform.MEDIA_PLAYER,
+                             Platform.SWITCH]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up PAM245 from a config entry."""

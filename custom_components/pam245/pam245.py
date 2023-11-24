@@ -19,6 +19,8 @@ SWITCH_COMMANDS = {
 SWITCH_COMMANDS_REVERSE = {v:k for k, v in SWITCH_COMMANDS.items()}
 
 class PAM245Api:
+    VOLUME_MIN = 0
+    VOLUME_MAX = 79
 
     def __init__(self) -> None:
         # Read/write
@@ -43,7 +45,7 @@ class PAM245Api:
         self._unparsed = ''
 
     def set_volume(self, volume: int) -> None:
-        if 0 <= volume <= 79:
+        if self.VOLUME_MIN <= volume <= self.VOLUME_MAX:
             self.volume = volume
             _LOGGER.info(f"Set volume to {volume}")
             self._send_command(f"Volume {volume:02}")
@@ -81,7 +83,7 @@ class PAM245Api:
                     _LOGGER.warning(f'Unknown event: {unknown_event}')
 
     def _event_volume(self, volume):
-        if 0 <= volume <= 79:
+        if self.VOLUME_MIN <= volume <= self.VOLUME_MAX:
             self.volume = volume
             self._call_callbacks()
         else:
