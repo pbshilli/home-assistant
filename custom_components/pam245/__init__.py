@@ -15,16 +15,21 @@ from .pam245 import (PAM245Api,
                      start_serial_connection,
                      )
 
-# TODO List the platforms that you want to support.
-# For your initial PR, limit it to 1 platform.
-PLATFORMS: list[Platform] = [Platform.NUMBER]
-
+PLATFORMS: list[Platform] = [Platform.NUMBER, Platform.SWITCH]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up PAM245 from a config entry."""
 
-    api = PAM245Api('/dev/ttyS0')
-    conn = await start_datagram_connection(hass.loop, api)
+    api = PAM245Api()
+
+    config = "udp:22222:33333" # TODO pull from actual HA config
+    if config.startswith('udp:'):
+        _, rx_port, tx_port = config.split(':')
+        conn = await start_datagram_connection(hass.loop, api,
+                                               int(rx_port), int(tx_port))
+    else:
+        serial_port = config
+        conn = await start_serial_connection(hass.loop, api, serial_port)
 
     hass.data.setdefault(DOMAIN, {})
     # TODO 1. Create API instance

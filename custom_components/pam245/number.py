@@ -16,6 +16,7 @@ from .pam245 import PAM245Api
 PAM245_NUMBER_DESCRIPTIONS = (
     NumberEntityDescription(
         key="volume",
+        name="Volume",
         translation_key="volume",
         native_step=1,
         native_min_value=0,
@@ -36,11 +37,11 @@ async def async_setup_entry(
     device = data
     descriptions: list[NumberEntityDescription] = []
     descriptions.extend(PAM245_NUMBER_DESCRIPTIONS)
-    async_add_entities(PAM245Number(device, description) for description in descriptions)
+    async_add_entities(PAM245VolumeNumber(device, description) for description in descriptions)
 
 
-class PAM245Number(PAM245Entity, NumberEntity):
-    """PAM245 number."""
+class PAM245VolumeNumber(PAM245Entity, NumberEntity):
+    """PAM245 volume number entity."""
 
     entity_description: NumberEntityDescription
 
@@ -48,7 +49,7 @@ class PAM245Number(PAM245Entity, NumberEntity):
         """Initialize the entity."""
         self.entity_description = description
         super().__init__(device)
-        self._attr_unique_id = f"{self._device.serial_port}-{description.key}"
+        self._attr_unique_id = f"{self._attr_unique_id}_volume"
         
     @callback
     def _async_update_attrs(self) -> None:
@@ -56,7 +57,7 @@ class PAM245Number(PAM245Entity, NumberEntity):
         self._attr_native_value = self._device.volume
         super()._async_update_attrs()
 
-    async def async_set_native_value(self, value: float) -> None:
+    def set_native_value(self, value: float) -> None:
         """Set the value."""
-        await self._device.set_volume(int(value))
+        self._device.set_volume(int(value))
         self.async_write_ha_state()

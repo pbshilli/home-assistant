@@ -17,11 +17,11 @@ class PAM245Entity(Entity):
     def __init__(self, device: PAM245Api) -> None:
         """Initialize the entity."""
         self._device = device
-        self._attr_unique_id = self._device.serial_port
+        self._attr_unique_id = f"{DOMAIN}_{self._device.serial}"
         self._attr_device_info = DeviceInfo(
             connections=set(),
-            identifiers={(DOMAIN, self._device.serial_port)},
-            name=self._device.name,
+            identifiers={(DOMAIN, self._device.serial)},
+            name="PAM245",
             manufacturer="OSD Audio",
             model="PAM245",
             sw_version=self._device.firmware_version,
