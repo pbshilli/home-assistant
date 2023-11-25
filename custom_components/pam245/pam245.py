@@ -23,6 +23,7 @@ SWITCH_COMMANDS_REVERSE = {v:k for k, v in SWITCH_COMMANDS.items()}
 class PAM245Api:
     VOLUME_MIN = 0
     VOLUME_MAX = 79
+    VOLUME_STEP = 3
 
     def __init__(self) -> None:
         # Read/write

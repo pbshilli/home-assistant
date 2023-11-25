@@ -91,7 +91,7 @@ class PAM245MediaPlayer(PAM245Entity, MediaPlayerEntity):
     def volume_up(self) -> None:
         """Volume up the media player."""
         if (volume := self._api.volume) < PAM245Api.VOLUME_MAX:
-            new_device_volume = volume + 1
+            new_device_volume = min(volume + PAM245Api.VOLUME_STEP, PAM245Api.VOLUME_MAX)
             self._api.set_volume(new_device_volume)
             self._attr_volume_level = new_device_volume / PAM245Api.VOLUME_MAX
             self.async_write_ha_state()
@@ -99,7 +99,7 @@ class PAM245MediaPlayer(PAM245Entity, MediaPlayerEntity):
     def volume_down(self) -> None:
         """Volume down media player."""
         if (volume := self._api.volume) > PAM245Api.VOLUME_MIN:
-            new_device_volume = volume - 1
+            new_device_volume = max(volume - PAM245Api.VOLUME_STEP, PAM245Api.VOLUME_MIN)
             self._api.set_volume(new_device_volume)
             self._attr_volume_level = new_device_volume / PAM245Api.VOLUME_MAX
             self.async_write_ha_state()
