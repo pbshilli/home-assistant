@@ -7,7 +7,6 @@ import serial_asyncio
 _LOGGER = logging.getLogger(__name__)
 
 SWITCH_COMMANDS = {
-    'volume': 'Volume',
     'mute': 'Mute',
     'power': 'Power',
     'system_lock': 'Lock',
@@ -18,7 +17,12 @@ SWITCH_COMMANDS = {
     'zone_4': 'Zone 4',
     'zone_5': 'Zone 5',
     }
-SWITCH_COMMANDS_REVERSE = {v:k for k, v in SWITCH_COMMANDS.items()}
+
+SWITCH_EVENTS = {
+    'Mute': 'mute',
+    'Power': 'power',
+    'Lock': 'system_lock',
+    }
 
 class PAM245Api:
     VOLUME_MIN = 0
@@ -87,17 +91,19 @@ class PAM245Api:
     def _process_events_from_device(self, events):
         for event in events:
             match event:
+                case ['PA', date, version]:
+                    self.firmware_version = f"PA {date} {version}"
                 case ['Volume', volume_str]:
                     volume = int(volume_str)
                     self._event_volume(volume)
-                case ['Zone', zone_id, value_str]:
-                    if zone_id == '0':
+                case ['Zone', zone_id, 'Out', value_str]:
+                    if zone_id == 'All':
                         zone_id = 'all'
-                    value = bool(int(value_str))
+                    value = True if value_str == 'On' else False
                     self._event_switch(f'zone_{zone_id}', value)
-                case [event_type, value_str] if event_type in SWITCH_COMMANDS_REVERSE:
-                    key = SWITCH_COMMANDS_REVERSE[event_type]
-                    value = bool(int(value_str))
+                case [event_type, value_str] if event_type in SWITCH_EVENTS:
+                    key = SWITCH_EVENTS[event_type]
+                    value = True if value_str == 'On' else False
                     self._event_switch(key, value)
                 case _:
                     unknown_event = ' '.join(event)
@@ -120,7 +126,7 @@ class PAM245Api:
 
     def _send_command(self, command):
         if self._send_data_to_device:
-            data = (command+'\n').encode()
+            data = (command+'\r\n').encode()
             self._send_data_to_device(data)
         else:
             _LOGGER.error(f'Command dropped (no connection): "{command}"')
